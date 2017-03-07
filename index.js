@@ -1,51 +1,79 @@
-#!/usr/bin/env node
+var prompt = require('prompt');
 
-'use strict';
+var checkWinner = function(board, player, row, col) {
+  // check horizonal
+  if (board[row][(col + 2) % 3] === player && board[row][(col + 1) % 3] === player) {
+    return true;
+  }
+  // check vertical
+  if (board[(row + 2) % 3][col] === player && board[(row + 1) % 3][col] === player) {
+    return true;
+  }
+  // check major diag
+  if (row === col && board[(row + 2) % 3][(col + 2) % 3] === player && board[(row + 1) % 3][(col + 1) % 3] === player) {
+    return true;
+  }
+  // check minor diag
+  if (row + col === 2 && board[(row + 2) % 3][(col + 1) % 3] === player && board[(row + 1) % 3][(col + 2) % 3] === player) {
+    return true;
+  }
+  return false;
+}
 
-var program = require('commander');
-
-program
-  .version('0.0.1')
-  .option('-o, --option','option description')
-  .option('-m, --more','we can have as many options as we want')
-  .option('-i, --input [optional]','optional user input')
-  .option('-I, --another-input <required>','required user input')
-  .parse(process.argv); // end with parse to parse through the input
-
-var player1 = null;
-var player2 = null;
-var forfeit = false;
-// var bigCounter = 1;
-var counter = 0;
-var currentPlayer = null;
-var currentMove = null;
-// var goodMove = false;
-var winner = false;
-var noWinner = false;
-var rowWinner = false;
-var colWinner = false;
-var diagWinner = false;
-var repeatPlay = false;
-var playAgain = null;
-
-// Game board stored as nested arrays
-var gameBoard = [
-    [" ", " ", " "],
-    [" ", " ", " "],
-    [" ", " ", " "]
-];
-
-var currentMove = [];
-var move = [];
-
-var blankBoard = function() {
-    console.log("         1   2   3 ");
-    console.log("      1    |   |   ");
-    console.log("        -----------");
-    console.log("      2    |   |   ");
-    console.log("        -----------");
-    console.log("      3    |   |   ");
-    console.log();
-    console.log("(@)=======(===(()=================================>");
-    console.log();
+var printBoard = function(board) {
+  console.log(board[0][0], '|', board[0][1],'|', board[0][2]);
+  console.log(board[1][0], '|', board[1][1],'|', board[1][2]);
+  console.log(board[2][0], '|', board[2][1],'|', board[2][2]);
 };
+var takeTurn = function(board, currentPlayer) {
+  printBoard(board);
+  console.log('Player ', currentPlayer, ', select a square (1-9).');
+  prompt.get(['square'], function (err, result) {
+    if (err) { return onErr(err); }
+    if (!(result.square > 0 && result.square < 10)) {
+      console.log('Please make a valid input');
+      takeTurn(board, currentPlayer);
+    } else {
+      var row = Math.floor((result.square - 1) / 3);
+      var col = (result.square - 1) % 3;
+      if (board[row][col] !== ' ') {
+        console.log('Please select a valid square.');
+        takeTurn(board, currentPlayer);
+      } else {
+        board[row][col] = currentPlayer;
+        if (checkWinner(board, currentPlayer, row, col)) {
+          printBoard(board);
+          console.log('Player ', currentPlayer, ' wins!');
+          console.log('Play again? (y/n)');
+          prompt.get(['answer'], function (err, result) {
+            if (err) { return onErr(err); }
+            if (result.answer.toLowerCase() === 'y') {
+              startGame();
+            } else {
+              console.log('Thanks for playing!');
+            }
+          });
+        } else {
+          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+          takeTurn(board, currentPlayer);
+        }
+      }
+    }
+  });
+}
+
+prompt.start();
+
+var startGame = function() {
+  var board = [[' ',' ',' '], [' ',' ',' '], [' ',' ',' ']];
+  var stillPlaying = true;
+  var currentPlayer = 'X';
+  takeTurn(board, currentPlayer);
+}
+
+startGame();
+
+function onErr(err) {
+  console.error(err);
+  return 1;
+}
